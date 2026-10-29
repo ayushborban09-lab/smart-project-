@@ -223,8 +223,10 @@ def create_app():
 
     return app
 
+# WSGI application entrypoint for Vercel & production servers
+app = create_app()
+
 if __name__ == "__main__":
-    app = create_app()
     port = int(os.environ.get("PORT", 5000))
     print(f"============================================================")
     print(f" MULTIMODAL ATTENDANCE & ENGAGEMENT AGENT")
@@ -232,3 +234,4 @@ if __name__ == "__main__":
     print(f" URL: http://127.0.0.1:{port}")
     print(f"============================================================")
     app.run(host="0.0.0.0", port=port, debug=False, threaded=True)
+

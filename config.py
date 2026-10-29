@@ -6,12 +6,20 @@ BASE_DIR = Path(__file__).resolve().parent
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "multimodal-agent-local-secret-2026")
     
+    # Vercel serverless runtime detection (filesystem is read-only except /tmp)
+    IS_VERCEL = os.environ.get("VERCEL") is not None
+    
     # Storage Paths
-    INSTANCE_DIR = BASE_DIR / "instance"
-    DATA_DIR = BASE_DIR / "data"
+    if IS_VERCEL:
+        INSTANCE_DIR = Path("/tmp/instance")
+        DATA_DIR = Path("/tmp/data")
+    else:
+        INSTANCE_DIR = BASE_DIR / "instance"
+        DATA_DIR = BASE_DIR / "data"
+
     UPLOAD_FOLDER = DATA_DIR / "uploads"
     REPORTS_FOLDER = DATA_DIR / "reports"
-    SAMPLE_MEDIA_FOLDER = DATA_DIR / "samples"
+    SAMPLE_MEDIA_FOLDER = BASE_DIR / "data" / "samples"
     
     DATABASE_PATH = INSTANCE_DIR / "database.db"
     
