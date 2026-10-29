@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Multimodal Attendance & Engagement Agent - Offline, Privacy-Preserving Computer Vision and Audio Analytics for Classrooms">
+    <title>{% block title %}Multimodal Attendance & Engagement Agent{% endblock %}</title>
+    
+    <!-- Design System CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Chart.js 4 for responsive analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    
+    <!-- Feather Icons for clean UI symbols -->
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+</head>
+<body>
+
+    <!-- Top Navigation Header -->
+    <nav class="navbar">
+        <div class="brand-wrapper">
+            <div class="brand-logo">MA</div>
+            <div class="brand-title">
+                <span>Multimodal Agent</span>
+                <span class="brand-subtitle">Attendance & Engagement</span>
+            </div>
+        </div>
+
+        <ul class="nav-links">
+            <li class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">
+                <a href="/"><i data-feather="grid"></i> Dashboard</a>
+            </li>
+            <li class="nav-item {% if active_page == 'sessions' %}active{% endif %}">
+                <a href="/sessions"><i data-feather="play-circle"></i> Sessions</a>
+            </li>
+            <li class="nav-item {% if active_page == 'attendance' %}active{% endif %}">
+                <a href="/attendance"><i data-feather="users"></i> Attendance</a>
+            </li>
+            <li class="nav-item {% if active_page == 'reports' %}active{% endif %}">
+                <a href="/reports"><i data-feather="file-text"></i> Reports</a>
+            </li>
+        </ul>
+
+        <div class="nav-actions">
+            <div class="status-badge-header" id="headerSystemHealth">
+                <div class="pulse-dot"></div>
+                <span id="healthLabel">Local Core Offline</span>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="btnQuickSeed" title="Seed realistic demo classroom data">
+                <i data-feather="database"></i> Seed Demo Data
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Dynamic Content -->
+    <main class="app-container">
+        {% block content %}{% endblock %}
+        
+        <!-- Ethical & Privacy Compliance Notice -->
+        <div class="ethical-banner">
+            <div class="ethical-icon"><i data-feather="shield"></i></div>
+            <div>
+                <strong>Privacy & Pedagogical Integrity Notice:</strong>
+                All vision and audio processing runs locally on this workstation without cloud uploads or raw recording retention. 
+                Engagement indices are experimental pedagogical estimates derived from observable signals and do not represent objective attention or emotional comprehension.
+            </div>
+        </div>
+    </main>
+
+    <!-- Global Footer -->
+    <footer class="footer">
+        <div>Multimodal Attendance & Engagement Agent &bull; Offline Privacy-Preserving Computer Vision & Audio Fusion Architecture</div>
+        <div style="margin-top: 0.35rem; color: #475569;">Local SQLite Engine &bull; Zero External Telemetry</div>
+    </footer>
+
+    <!-- Feather Icons Init & Base JS -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            if (window.feather) feather.replace();
+
+            // Quick Seed Demo Data Handler
+            const seedBtn = document.getElementById("btnQuickSeed");
+            if (seedBtn) {
+                seedBtn.addEventListener("click", async () => {
+                    seedBtn.disabled = true;
+                    seedBtn.innerHTML = "<i data-feather='loader'></i> Seeding...";
+                    if (window.feather) feather.replace();
+                    try {
+                        const res = await fetch("/api/demo/seed", { method: "POST" });
+                        const data = await res.json();
+                        if (data.success) {
+                            alert("Demo classroom and session successfully populated! Refreshing...");
+                            window.location.reload();
+                        } else {
+                            alert("Seed error: " + data.error);
+                        }
+                    } catch (e) {
+                        alert("Error connecting to backend: " + e);
+                    } finally {
+                        seedBtn.disabled = false;
+                        seedBtn.innerHTML = "<i data-feather='database'></i> Seed Demo Data";
+                        if (window.feather) feather.replace();
+                    }
+                });
+            }
+
+            // Health check
+            fetch("/api/health")
+                .then(r => r.json())
+                .then(d => {
+                    const lbl = document.getElementById("healthLabel");
+                    if (lbl) {
+                        lbl.textContent = d.hardware.camera_detected ? "Camera Active (Local)" : "Local Simulation Mode";
+                    }
+                })
+                .catch(() => {});
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

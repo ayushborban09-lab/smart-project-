@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Multimodal Attendance & Engagement Agent{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Classroom Analytics Dashboard</h1>
+        <p class="page-desc">Real-time multimodal computer vision, acoustic activity, and AI-driven pedagogical recommendations.</p>
+    </div>
+    <div class="header-controls">
+        <label for="sessionSelector" style="font-size: 0.82rem; color: var(--text-secondary);">Active Session:</label>
+        <select id="sessionSelector" class="input-select" style="min-width: 260px;">
+            <option value="">Loading sessions...</option>
+        </select>
+        <button id="btnStartSession" class="btn btn-primary btn-sm"><i data-feather="play"></i> Start Session</button>
+        <button id="btnStopSession" class="btn btn-danger btn-sm" style="display: none;"><i data-feather="square"></i> Stop Session</button>
+    </div>
+</div>
+
+<!-- Key Performance Indicators (KPI Cards) -->
+<section class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-title">Detected Participants</span>
+            <i data-feather="eye" class="stat-icon"></i>
+        </div>
+        <div class="stat-value" id="statDetected">0</div>
+        <div class="stat-meta"><span id="statActiveTracks">0</span> active video tracks</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-title">Marked Present</span>
+            <i data-feather="check-circle" class="stat-icon" style="color: var(--accent-emerald);"></i>
+        </div>
+        <div class="stat-value" id="statPresent" style="color: var(--accent-emerald);">0</div>
+        <div class="stat-meta">Sustained presence qualifying threshold</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-title">Attendance Rate</span>
+            <i data-feather="percent" class="stat-icon"></i>
+        </div>
+        <div class="stat-value" id="statAttendanceRate">0%</div>
+        <div class="stat-meta">Ratio of verified present attendees</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-title">Engagement Estimate</span>
+            <i data-feather="activity" class="stat-icon" style="color: var(--accent-cyan);"></i>
+        </div>
+        <div class="stat-value" id="statEngagement">50.0%</div>
+        <div class="stat-meta"><span class="badge" id="statEngagementLevel" style="background: var(--accent-cyan-dim); color: var(--accent-cyan);">Moderate</span></div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-title">Acoustic Activity</span>
+            <i data-feather="volume-2" class="stat-icon"></i>
+        </div>
+        <div class="stat-value" id="statSpeechRatio">0%</div>
+        <div class="stat-meta" id="statAudioDominant">Silence / Ambient</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-title">Observation Quality</span>
+            <i data-feather="shield-check" class="stat-icon"></i>
+        </div>
+        <div class="stat-value" id="statDataQuality" style="font-size: 1.5rem;">Optimal</div>
+        <div class="stat-meta">Confidence: <span id="statConfidence">90%</span></div>
+    </div>
+</section>
+
+<!-- Dashboard Main Grid -->
+<div class="dashboard-grid">
+    <!-- Left Column: Live Vision Feed & HUD -->
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i data-feather="video"></i> Live Visual Stream & HUD</h3>
+                <span class="card-badge" id="liveFpsBadge">0.0 FPS</span>
+            </div>
+
+            <div class="video-feed-wrapper">
+                <img id="liveVideoFeed" class="video-stream-img" src="" alt="Live Video Feed (Awaiting Session Start)">
+                <div class="feed-hud-overlay">
+                    <span class="hud-pill" id="hudStatus">READY</span>
+                    <span class="hud-pill" id="hudInputMode">WEBCAM / SIM</span>
+                </div>
+            </div>
+
+            <div class="feed-controls">
+                <div style="font-size: 0.82rem; color: var(--text-secondary);">
+                    <span>Elapsed: <strong id="hudElapsed" style="color: var(--text-primary);">0s</strong></span> &bull; 
+                    <span>Modality: <strong id="hudModality" style="color: var(--accent-cyan);">Multimodal</strong></span>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="/attendance" class="btn btn-secondary btn-sm"><i data-feather="list"></i> Review Full List</a>
+                    <button id="btnToggleFeed" class="btn btn-secondary btn-sm"><i data-feather="refresh-cw"></i> Reload Feed</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-Time Attendance Snapshot -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i data-feather="clock"></i> Sustained Presence Attendance Log</h3>
+                <span class="card-badge" id="attCountBadge">0 Participants</span>
+            </div>
+            
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Participant ID</th>
+                            <th>Student Name</th>
+                            <th>Observed Time</th>
+                            <th>Presence %</th>
+                            <th>Forward Pose</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendanceSnapshotBody">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                                Select and start a session to begin sustained presence tracking.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Multimodal Engagement Chart & AI Recommendations -->
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <!-- Chart Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i data-feather="trending-up"></i> Multimodal Engagement Trends</h3>
+                <span class="card-badge" style="background: var(--accent-cyan-dim); color: var(--accent-cyan);">10s Windows</span>
+            </div>
+            <div style="position: relative; height: 260px; width: 100%;">
+                <canvas id="engagementTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- AI Teaching Recommendation Agent Panel -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i data-feather="cpu"></i> AI Teaching Recommendations</h3>
+                <span class="card-badge" id="recCountBadge">0 Tips</span>
+            </div>
+            <div class="rec-list" id="recommendationsList">
+                <div style="text-align: center; color: var(--text-muted); padding: 2.5rem 1rem;">
+                    <i data-feather="info" style="margin-bottom: 0.5rem; width: 32px; height: 32px;"></i>
+                    <p>No active recommendations yet.</p>
+                    <p style="font-size: 0.8rem;">The AI agent continuously observes visual attention and acoustic turn-taking to trigger evidence-based suggestions.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

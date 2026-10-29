@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance Review - Multimodal Attendance & Engagement Agent{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Attendance Review Workspace</h1>
+        <p class="page-desc">Review sustained presence calculations, verify student mappings, and apply teacher overrides.</p>
+    </div>
+    <div class="header-controls">
+        <label for="attSessionFilter" style="font-size: 0.82rem; color: var(--text-secondary);">Select Session:</label>
+        <select id="attSessionFilter" class="input-select" style="min-width: 250px;">
+            <option value="">Loading sessions...</option>
+        </select>
+        <button id="btnExportCsv" class="btn btn-secondary btn-sm"><i data-feather="download"></i> Export CSV</button>
+    </div>
+</div>
+
+<!-- Attendance KPI Cards -->
+<section class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-title">Total Detected Tracks</span>
+            <i data-feather="users" class="stat-icon"></i>
+        </div>
+        <div class="stat-value" id="attStatDetected">0</div>
+        <div class="stat-meta">Unique temporal tracks</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-title">Verified Present</span>
+            <i data-feather="check-circle" class="stat-icon" style="color: var(--accent-emerald);"></i>
+        </div>
+        <div class="stat-value" id="attStatPresent" style="color: var(--accent-emerald);">0</div>
+        <div class="stat-meta">Passed sustained presence rule</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-title">Transient / Observers</span>
+            <i data-feather="clock" class="stat-icon" style="color: var(--accent-amber);"></i>
+        </div>
+        <div class="stat-value" id="attStatTransient" style="color: var(--accent-amber);">0</div>
+        <div class="stat-meta">Brief presence under threshold</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-title">Teacher Overrides</span>
+            <i data-feather="edit-3" class="stat-icon" style="color: var(--accent-purple);"></i>
+        </div>
+        <div class="stat-value" id="attStatReviewed" style="color: var(--accent-purple);">0</div>
+        <div class="stat-meta">Manual teacher corrections</div>
+    </div>
+</section>
+
+<!-- Filter Toolbar -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; gap: 1rem; flex-wrap: wrap;">
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+        <input type="text" id="attSearchInput" class="input-text" placeholder="Search Track ID or Name..." style="min-width: 220px;">
+        <select id="attStatusFilter" class="input-select">
+            <option value="all">All Statuses</option>
+            <option value="present">Present Only</option>
+            <option value="transient">Transient Only</option>
+            <option value="absent">Absent Only</option>
+            <option value="excused">Excused Only</option>
+        </select>
+    </div>
+    <div style="font-size: 0.82rem; color: var(--text-secondary);">
+        Rule: <strong style="color: var(--accent-cyan);">Sustained presence threshold required</strong> (instantaneous detections filtered).
+    </div>
+</div>
+
+<!-- Attendance Master Table -->
+<div class="card">
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Track ID</th>
+                    <th>Student Identity</th>
+                    <th>First Seen</th>
+                    <th>Last Seen</th>
+                    <th>Observed Presence</th>
+                    <th>Presence %</th>
+                    <th>Forward Gaze</th>
+                    <th>Status</th>
+                    <th>Verification</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="attendanceTableBody">
+                <tr>
+                    <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 2.5rem;">Loading attendance data...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Teacher Review / Override -->
+<div class="modal-overlay" id="reviewModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title"><i data-feather="edit-2"></i> Review Attendance Record</h3>
+            <button class="modal-close" id="btnCloseReviewModal">&times;</button>
+        </div>
+        <form id="reviewRecordForm">
+            <input type="hidden" id="modalRecordId">
+            <div class="form-group">
+                <label class="form-label">Participant Track ID</label>
+                <input type="text" id="modalTrackId" class="input-text" style="width: 100%;" readonly>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Override Status</label>
+                <select id="modalStatusSelect" class="input-select" style="width: 100%;">
+                    <option value="present">Present (Verified sustained presence)</option>
+                    <option value="absent">Absent (Not present in class)</option>
+                    <option value="excused">Excused (Approved institutional absence)</option>
+                    <option value="transient">Transient (Visitor / Brief appearance)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Reviewing Teacher Name</label>
+                <input type="text" id="modalTeacherName" class="input-text" style="width: 100%;" value="Prof. Instructor" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Review Notes / Justification</label>
+                <input type="text" id="modalReviewNotes" class="input-text" style="width: 100%;" placeholder="e.g. Verified participant seated at rear desk">
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-secondary" id="btnCancelReviewModal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Override</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Bind Student Identity -->
+<div class="modal-overlay" id="bindModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title"><i data-feather="link"></i> Map Student Identity</h3>
+            <button class="modal-close" id="btnCloseBindModal">&times;</button>
+        </div>
+        <form id="bindStudentForm">
+            <input type="hidden" id="bindModalTrackId">
+            <div class="form-group">
+                <label class="form-label">Participant Track</label>
+                <input type="text" id="bindModalTrackDisplay" class="input-text" style="width: 100%;" readonly>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Select Registered Student</label>
+                <select id="bindStudentSelect" class="input-select" style="width: 100%;" required>
+                    <option value="">Loading classroom roster...</option>
+                </select>
+            </div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 1rem;">
+                Authorized mapping associates this anonymous visual track with the student's academic record.
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <button type="button" class="btn btn-secondary" id="btnCancelBindModal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Bind Student</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/attendance.js') }}"></script>
+{% endblock %}

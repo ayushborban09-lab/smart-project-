@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Session Reports - Multimodal Attendance & Engagement Agent{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Session Reports & Audits</h1>
+        <p class="page-desc">Comprehensive pedagogical summaries, attendance audits, and multimodal engagement analytics.</p>
+    </div>
+    <div class="header-controls">
+        <label for="reportSessionSelect" style="font-size: 0.82rem; color: var(--text-secondary);">Select Session:</label>
+        <select id="reportSessionSelect" class="input-select" style="min-width: 250px;">
+            <option value="">Loading sessions...</option>
+        </select>
+        <button id="btnOpenHtmlReport" class="btn btn-primary btn-sm"><i data-feather="printer"></i> Printable HTML Report</button>
+        <button id="btnDownloadJsonReport" class="btn btn-secondary btn-sm"><i data-feather="download"></i> Download JSON</button>
+    </div>
+</div>
+
+<!-- Report Summary KPI Cards -->
+<section class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-title">Verified Attendance</span>
+            <i data-feather="users" class="stat-icon" style="color: var(--accent-emerald);"></i>
+        </div>
+        <div class="stat-value" id="repAttRate">0%</div>
+        <div class="stat-meta"><span id="repAttCounts">0 / 0</span> participants present</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-title">Mean Engagement Index</span>
+            <i data-feather="activity" class="stat-icon" style="color: var(--accent-cyan);"></i>
+        </div>
+        <div class="stat-value" id="repAvgEngagement">0.0%</div>
+        <div class="stat-meta">Composite sensory estimation</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-title">Modality Indices</span>
+            <i data-feather="sliders" class="stat-icon"></i>
+        </div>
+        <div class="stat-value" id="repModalities" style="font-size: 1.45rem;">0% / 0%</div>
+        <div class="stat-meta">Visual Focus / Audio Interaction</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-title">Teaching Tips Generated</span>
+            <i data-feather="cpu" class="stat-icon" style="color: var(--accent-purple);"></i>
+        </div>
+        <div class="stat-value" id="repTipsCount" style="color: var(--accent-purple);">0</div>
+        <div class="stat-meta">Pedagogical recommendations</div>
+    </div>
+</section>
+
+<!-- Analytical Summary Text Card -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">
+        <h3 class="card-title"><i data-feather="align-left"></i> Executive Session Summary</h3>
+        <span class="card-badge" id="repDurationBadge">0 min duration</span>
+    </div>
+    <p id="repSummaryText" style="color: #CBD5E1; line-height: 1.7; font-size: 0.95rem;">
+        Select a session above to generate and inspect comprehensive reports.
+    </p>
+</div>
+
+<!-- Report Preview Card (HTML View) -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i data-feather="file-text"></i> Interactive Report Document</h3>
+        <span class="card-badge" style="background: rgba(0, 230, 118, 0.1); color: var(--accent-emerald);">Verified Local Storage</span>
+    </div>
+    <div style="width: 100%; height: 600px; background: #0A1128; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--card-border);">
+        <iframe id="reportPreviewFrame" style="width: 100%; height: 100%; border: none;" src="about:blank"></iframe>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentRepSessionId = null;
+
+document.addEventListener("DOMContentLoaded", () => {
+    loadReportSessions();
+
+    const sel = document.getElementById("reportSessionSelect");
+    if (sel) {
+        sel.addEventListener("change", (e) => {
+            currentRepSessionId = parseInt(e.target.value);
+            loadReportData(currentRepSessionId);
+        });
+    }
+
+    const btnHtml = document.getElementById("btnOpenHtmlReport");
+    if (btnHtml) {
+        btnHtml.addEventListener("click", () => {
+            if (currentRepSessionId) {
+                window.open(`/api/reports/${currentRepSessionId}/html`, "_blank");
+            }
+        });
+    }
+
+    const btnJson = document.getElementById("btnDownloadJsonReport");
+    if (btnJson) {
+        btnJson.addEventListener("click", () => {
+            if (currentRepSessionId) {
+                window.location.href = `/api/reports/${currentRepSessionId}/download`;
+            }
+        });
+    }
+});
+
+async function loadReportSessions() {
+    const sel = document.getElementById("reportSessionSelect");
+    if (!sel) return;
+
+    try {
+        const res = await fetch("/api/sessions");
+        const json = await res.json();
+        sel.innerHTML = "";
+
+        if (!json.success || json.data.length === 0) {
+            sel.innerHTML = '<option value="">No sessions available</option>';
+            return;
+        }
+
+        json.data.forEach(s => {
+            const opt = document.createElement("option");
+            opt.value = s.id;
+            opt.textContent = `#${s.id} - ${s.title} (${s.classroom_code || "Class"})`;
+            sel.appendChild(opt);
+        });
+
+        if (sel.options.length > 0) {
+            currentRepSessionId = parseInt(sel.value);
+            loadReportData(currentRepSessionId);
+        }
+    } catch (e) {
+        console.error("Error loading report sessions:", e);
+    }
+}
+
+async function loadReportData(sessionId) {
+    if (!sessionId) return;
+
+    try {
+        const res = await fetch(`/api/reports/${sessionId}`);
+        const json = await res.json();
+
+        if (json.success && json.data) {
+            const ana = json.data.analytics;
+            const sess = json.data.session;
+
+            document.getElementById("repAttRate").textContent = (ana.attendance_rate || 0) + "%";
+            document.getElementById("repAttCounts").textContent = `${ana.total_present || 0} / ${ana.total_detected || 0}`;
+            document.getElementById("repAvgEngagement").textContent = (ana.avg_engagement_score || 0) + "%";
+            document.getElementById("repModalities").textContent = `${ana.visual_index || 0}% / ${ana.audio_index || 0}%`;
+            document.getElementById("repTipsCount").textContent = ana.recommendations_count || 0;
+            document.getElementById("repDurationBadge").textContent = Math.round((sess.duration_seconds || 0) / 60) + " min duration";
+            document.getElementById("repSummaryText").textContent = ana.summary_text || "No summary text available.";
+
+            // Load iframe with printable HTML view
+            const iframe = document.getElementById("reportPreviewFrame");
+            if (iframe) {
+                iframe.src = `/api/reports/${sessionId}/html`;
+            }
+        }
+    } catch (e) {
+        console.error("Error fetching report data:", e);
+    }
+}
+</script>
+{% endblock %}

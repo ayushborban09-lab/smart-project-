@@ -1,0 +1,29 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Pytest cache
+.pytest_cache/
+
+# Local databases
+instance/*.db
+!instance/.gitkeep
+
+# Temporary media uploads
+data/uploads/*
+!data/uploads/.gitkeep
+
+# Generated reports
+data/reports/*.json
+data/reports/*.html
+!data/reports/.gitkeep
+
+# Virtual environment
+venv/
+.env/
+env/
+
+# IDE files
+.vscode/
+.idea/

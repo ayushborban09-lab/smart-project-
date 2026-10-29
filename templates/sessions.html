@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Sessions - Multimodal Attendance & Engagement Agent{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Session Management</h1>
+        <p class="page-desc">Create, configure, and monitor live or recorded multimodal classroom monitoring sessions.</p>
+    </div>
+    <div class="header-controls">
+        <button id="btnOpenNewSessionModal" class="btn btn-primary"><i data-feather="plus-circle"></i> Create New Session</button>
+        <button id="btnOpenClassroomModal" class="btn btn-secondary"><i data-feather="book-open"></i> Manage Classrooms</button>
+    </div>
+</div>
+
+<!-- Sessions Table Card -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i data-feather="layers"></i> Classroom Sessions</h3>
+        <span class="card-badge" id="sessionTableCountBadge">Loading...</span>
+    </div>
+
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Session ID</th>
+                    <th>Title</th>
+                    <th>Classroom</th>
+                    <th>Input Modality</th>
+                    <th>Duration</th>
+                    <th>Present / Detected</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="sessionsTableBody">
+                <tr>
+                    <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading sessions...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Create New Session -->
+<div class="modal-overlay" id="newSessionModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title"><i data-feather="video"></i> Launch Classroom Session</h3>
+            <button class="modal-close" id="btnCloseSessionModal">&times;</button>
+        </div>
+        <form id="newSessionForm">
+            <div class="form-group">
+                <label class="form-label">Classroom</label>
+                <select id="modalClassSelect" class="input-select" style="width: 100%;" required>
+                    <option value="">Select Classroom...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Session Title</label>
+                <input type="text" id="modalSessionTitle" class="input-text" style="width: 100%;" placeholder="e.g. Computer Vision Lab #4" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Input Source Modality</label>
+                <select id="modalInputType" class="input-select" style="width: 100%;">
+                    <option value="webcam">Live Webcam & Microphone (Default)</option>
+                    <option value="video_file">Recorded Video File Upload</option>
+                    <option value="audio_file">Recorded Audio File Upload</option>
+                    <option value="multimodal">Recorded Video + Audio Files</option>
+                    <option value="synthetic">Synthetic Classroom Simulation (No Camera Required)</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="videoUploadGroup" style="display: none;">
+                <label class="form-label">Upload Video File (.mp4, .avi, .mkv)</label>
+                <input type="file" id="modalVideoFile" class="input-text" style="width: 100%;" accept=".mp4,.avi,.mov,.mkv,.webm">
+                <div id="videoUploadStatus" style="font-size: 0.75rem; color: var(--accent-cyan); margin-top: 0.25rem;"></div>
+            </div>
+
+            <div class="form-group" id="audioUploadGroup" style="display: none;">
+                <label class="form-label">Upload Audio File (.wav, .mp3, .ogg, .flac)</label>
+                <input type="file" id="modalAudioFile" class="input-text" style="width: 100%;" accept=".wav,.mp3,.ogg,.flac,.m4a">
+                <div id="audioUploadStatus" style="font-size: 0.75rem; color: var(--accent-cyan); margin-top: 0.25rem;"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Session Notes (Optional)</label>
+                <input type="text" id="modalSessionNotes" class="input-text" style="width: 100%;" placeholder="e.g. Focus on interactive group discussion">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-secondary" id="btnCancelSessionModal">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="btnSubmitSession">Create & Start</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Create New Classroom -->
+<div class="modal-overlay" id="classroomModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title"><i data-feather="book-open"></i> Create Classroom</h3>
+            <button class="modal-close" id="btnCloseClassModal">&times;</button>
+        </div>
+        <form id="newClassForm">
+            <div class="form-group">
+                <label class="form-label">Classroom Name</label>
+                <input type="text" id="modalClassName" class="input-text" style="width: 100%;" placeholder="e.g. Advanced Machine Learning" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Course Code</label>
+                <input type="text" id="modalClassCode" class="input-text" style="width: 100%;" placeholder="e.g. CS-501" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Subject</label>
+                <input type="text" id="modalClassSubject" class="input-text" style="width: 100%;" placeholder="e.g. Computer Science">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Department</label>
+                <input type="text" id="modalClassDept" class="input-text" style="width: 100%;" placeholder="e.g. Engineering">
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-secondary" id="btnCancelClassModal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Classroom</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/session.js') }}"></script>
+{% endblock %}
